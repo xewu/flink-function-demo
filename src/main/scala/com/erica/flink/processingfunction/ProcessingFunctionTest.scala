@@ -1,26 +1,24 @@
-package com.erica.flink.timebasedwindow
+package com.erica.flink.processingfunction
 
 import com.erica.flink.source.SensorReading
-import org.apache.flink.api.common.eventtime._
+import org.apache.flink.api.common.eventtime.{BoundedOutOfOrdernessWatermarks, TimestampAssigner, TimestampAssignerSupplier, Watermark, WatermarkGenerator, WatermarkGeneratorSupplier, WatermarkOutput, WatermarkStrategy}
+import org.apache.flink.streaming.api.functions.KeyedProcessFunction
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment, createTypeInformation}
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows
 import org.apache.flink.streaming.api.windowing.time.Time
+import org.apache.flink.util.Collector
 
 import java.time.Duration
 
-// watermark delay 6000L ms
-// watermark interval set 100L
-// tumbling window 10s
-
-object WindowEventTimeTest {
+object ProcessingFunctionTest {
   def main(args: Array[String]): Unit = {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.setParallelism(1)
     env.getConfig.setAutoWatermarkInterval(100L)
-//    env.setStreamTimeCharacteristic( TimeCharacteristic.EventTime)
+    //    env.setStreamTimeCharacteristic( TimeCharacteristic.EventTime)
 
-//    val filePath = "/Users/tolo7e/Gits/Flink-Jobs/flink-demo-jobs/src/main/scala/com/tutorial/api/source/sensor_data.txt"
-//        val stream = env.readTextFile(filePath)
+    //    val filePath = "/Users/tolo7e/Gits/Flink-Jobs/flink-demo-jobs/src/main/scala/com/tutorial/api/source/sensor_data.txt"
+    //        val stream = env.readTextFile(filePath)
     val stream = env.socketTextStream("localhost", 7777)
 
     val dataStream = stream.map(data => {
@@ -30,7 +28,7 @@ object WindowEventTimeTest {
 
     val withTimestampsAndWatermarks: DataStream[SensorReading] = dataStream
       .assignTimestampsAndWatermarks(new MyTimestampsAndWatermarks)
-//      .assignAscendingTimestamps(_.timestamp * 1000) //ms
+    //      .assignAscendingTimestamps(_.timestamp * 1000) //ms
 
     val minTempPerWindowStream = withTimestampsAndWatermarks
       .map( data => (data.id, data.temperature))
@@ -41,7 +39,17 @@ object WindowEventTimeTest {
     minTempPerWindowStream.print("min temp")
     dataStream.print("input data")
 
+    dataStream.keyBy(_.id)
+      .process(new MyProcess())
+
     env.execute("event time test")
+  }
+}
+
+class MyProcess() extends KeyedProcessFunction[String, SensorReading, String] {
+  override def processElement(i: SensorReading, context: KeyedProcessFunction[String, SensorReading, String]#Context, collector: Collector[String]): Unit = {
+    context.timestamp()
+    context.timerService().registerEventTimeTimer(2000L)
   }
 }
 
@@ -74,8 +82,3 @@ class MyTimestampsAssigner extends TimestampAssigner[SensorReading] {
     t.timestamp * 1000
   }
 }
-
-
-
-
-
