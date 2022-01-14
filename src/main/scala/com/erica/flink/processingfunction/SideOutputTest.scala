@@ -1,16 +1,14 @@
 package com.erica.flink.processingfunction
 
 import com.erica.flink.source.SensorReading
-import org.apache.flink.api.common.eventtime.{BoundedOutOfOrdernessWatermarks, TimestampAssigner, TimestampAssignerSupplier, Watermark, WatermarkGenerator, WatermarkGeneratorSupplier, WatermarkOutput, WatermarkStrategy}
+import org.apache.flink.api.common.eventtime._
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment, createTypeInformation}
-import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows
-import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.util.Collector
 
 import java.time.Duration
 
-object ProcessingFunctionTest {
+object SideOutputTest {
   def main(args: Array[String]): Unit = {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.setParallelism(1)
@@ -27,20 +25,13 @@ object ProcessingFunctionTest {
     })
 
     val withTimestampsAndWatermarks: DataStream[SensorReading] = dataStream
-      .assignTimestampsAndWatermarks(new MyTimestampsAndWatermarks)
+      .assignTimestampsAndWatermarks(new MyTimestampsAndWatermarkStrategy)
     //      .assignAscendingTimestamps(_.timestamp * 1000) //ms
 
-    val minTempPerWindowStream = withTimestampsAndWatermarks
-      .map( data => (data.id, data.temperature))
-      .keyBy(_._1)
-      .window(TumblingEventTimeWindows.of(Time.seconds(15), Time.seconds(5)))
-      .reduce( (data1, data2) => (data1._1, data1._2.min(data2._2)))
+    /**
+     * -- high temperature vs low temperature
+     */
 
-    minTempPerWindowStream.print("min temp")
-    dataStream.print("input data")
-
-    dataStream.keyBy(_.id)
-      .process(new MyProcess())
 
     env.execute("event time test")
   }
@@ -53,7 +44,7 @@ class MyProcess() extends KeyedProcessFunction[String, SensorReading, String] {
   }
 }
 
-class MyTimestampsAndWatermarks() extends WatermarkStrategy[SensorReading] {
+class MyTimestampsAndWatermarkStrategy() extends WatermarkStrategy[SensorReading] {
   override def createTimestampAssigner(context: TimestampAssignerSupplier.Context): TimestampAssigner[SensorReading] = {
     new MyTimestampsAssigner()
   }
