@@ -27,7 +27,7 @@ object ProcessingFunctionTest {
     })
 
     val withTimestampsAndWatermarks: DataStream[SensorReading] = dataStream
-      .assignTimestampsAndWatermarks(new MyTimestampsAndWatermarkStrategy)
+      .assignTimestampsAndWatermarks(new MyTimestampsAndWatermarkStrategyII)
     //      .assignAscendingTimestamps(_.timestamp * 1000) //ms
 
     val minTempPerWindowStream = withTimestampsAndWatermarks

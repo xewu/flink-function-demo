@@ -4,7 +4,7 @@ import com.erica.flink.source.SensorReading
 import org.apache.flink.api.common.eventtime._
 import org.apache.flink.api.common.state.{ValueState, ValueStateDescriptor}
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction
-import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment, createTypeInformation}
+import org.apache.flink.streaming.api.scala.{StreamExecutionEnvironment, createTypeInformation}
 import org.apache.flink.util.Collector
 
 import java.time.Duration
@@ -22,8 +22,6 @@ object ProcessFunctionTimerAlertTest {
       val dataArray = data.split(",")
       SensorReading(dataArray(0).trim, dataArray(1).trim.toLong, dataArray(2).trim.toDouble)
     })
-
-    val withTimestampsAndWatermarks: DataStream[SensorReading] = dataStream
       .assignTimestampsAndWatermarks(new MyTimestampsAndWatermarks)
     //      .assignAscendingTimestamps(_.timestamp * 1000) //ms
 
@@ -74,7 +72,7 @@ class TemIncreAlert extends KeyedProcessFunction[String, SensorReading, String] 
 
 class MyTimestampsAndWatermarks() extends WatermarkStrategy[SensorReading] {
   override def createTimestampAssigner(context: TimestampAssignerSupplier.Context): TimestampAssigner[SensorReading] = {
-    new MyTimestampsAssignerII()
+    new MyTimestampsAssignerI()
   }
 
   override def createWatermarkGenerator(context: WatermarkGeneratorSupplier.Context): WatermarkGenerator[SensorReading] = {
@@ -96,7 +94,7 @@ class MyTimestampsAndWatermarks() extends WatermarkStrategy[SensorReading] {
 //  }
 //}
 
-class MyTimestampsAssignerII extends TimestampAssigner[SensorReading] {
+class MyTimestampsAssignerI extends TimestampAssigner[SensorReading] {
   override def extractTimestamp(t: SensorReading, l: Long): Long = {
     t.timestamp * 1000
   }
