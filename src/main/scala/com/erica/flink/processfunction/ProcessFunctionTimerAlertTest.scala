@@ -1,4 +1,4 @@
-package com.erica.flink.processingfunction
+package com.erica.flink.processfunction
 
 import com.erica.flink.source.SensorReading
 import org.apache.flink.api.common.eventtime._
