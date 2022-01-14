@@ -49,7 +49,7 @@ class FreezingAlert() extends ProcessFunction[SensorReading, SensorReading] {
     if (r.temperature < 32.0) {
       ctx.output(alertOutput, "freezing alert for " + r.id)
     } else {
-    out.collect(r)
+      out.collect(r)
     }
   }
 }
