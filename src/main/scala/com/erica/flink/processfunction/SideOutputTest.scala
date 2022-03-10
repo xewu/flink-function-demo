@@ -1,4 +1,4 @@
-package com.erica.flink.processingfunction
+package com.erica.flink.processfunction
 
 import com.erica.flink.source.SensorReading
 import org.apache.flink.api.common.eventtime._
@@ -47,9 +47,9 @@ class FreezingAlert() extends ProcessFunction[SensorReading, SensorReading] {
                               ctx: ProcessFunction[SensorReading, SensorReading]#Context,
                               out: Collector[SensorReading]):Unit = {
     if (r.temperature < 32.0) {
-      ctx.output(alertOutput, "freezing alert for " + r.id)
+      ctx.output(alertOutput, "freezing alert for " + r.id + ", temperature: " + r.temperature)
     } else {
-    out.collect(r)
+      out.collect(r)
     }
   }
 }
